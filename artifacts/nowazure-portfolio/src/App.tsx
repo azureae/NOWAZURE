@@ -226,7 +226,7 @@ function App() {
           </motion.div>
           <motion.div className="hero-statement" style={{ opacity: logoOpacity }}>
             <span className="statement-line" />
-            <p>Every piece starts the same way: find where the light falls, then build the scene around the shadow it leaves.</p>
+            <p>Oculos ad astra, pedes in terra. </p>
           </motion.div>
           <a className="hero-cta mono" href="#works">STEP INTO THE WORK <ArrowDownRight size={15} /></a>
         </div>
@@ -251,11 +251,11 @@ function App() {
           <span className="mono section-count">02 / 04</span>
         </div>
         <div className="about-grid">
-          <h2 className="serif">Worlds with<br /><em>a point of view.</em></h2>
+          <h2 className="serif">Just who<br /><em>am I?</em></h2>
           <div className="about-prose">
-            <p>I’m Nowazure, a Philippines-based Roblox vignette artist drawn to the moments between the action. I build cinematic scenes, thumbnails, logos, and visual identities that give a game its own atmosphere.</p>
-            <p>Each scene begins with the same question: where does the light fall? The answer becomes the composition, the mood, and the story. Terrain, structures, clutter, custom lighting, and a final grade all support the shot — never just fill the frame.</p>
-            <div className="tool-list"><span className="section-label">IN THE TOOLKIT</span><div><span>Roblox Studio</span><i /> <span>Blender</span><i /> <span>Photoshop</span></div></div>
+            <p>I’m nowazure, a Philippines-based Roblox developer drawn to the moments between the action. I build cinematic scenes, thumbnails, logos, and visual identities that give a game its own atmosphere.</p>
+            <p>Each scene begins with the same question: How would I perceive life happening in this scene? The answer becomes the composition, the mood, and the story. Terrain, structures, clutter, custom lighting, and a final grade all support the shot, even supporting hidden details whenever applicable.</p>
+            <div className="tool-list"><span className="section-label">IN THE TOOLKIT</span><div><span>Roblox Studio</span><i /> <span>Blender</span><i /> <span>Paint.NET</span></div></div>
           </div>
         </div>
         <div className="about-foot"><span className="mono">SCENE BUILDER / IMAGE MAKER</span><span className="mono">AVAILABLE FOR SELECT PROJECTS <b>●</b></span></div>
@@ -263,9 +263,9 @@ function App() {
 
       <section id="works" className="works-section">
         <div className="works-heading section-shell">
-          <div><span className="section-label">03 / THE COLLECTION</span><h2 className="serif">Make a little <em>room.</em></h2></div>
+          <div><span className="section-label">03 / THE COLLECTION</span><h2 className="serif">Take a look <em>around.</em></h2></div>
           <div className="works-heading-actions">
-            <p>Pull a frame from the reel.<br />Place it where it belongs.</p>
+            <p>Pull a frame from the reel.<br />Place it wherever you want.</p>
             <button className="return-all" type="button" onClick={returnAll} disabled={placed.length === 0} data-testid="button-return-all">
               <RotateCcw size={13} aria-hidden="true" /> RETURN ALL <span>{String(placed.length).padStart(2, '0')}</span>
             </button>
@@ -273,7 +273,7 @@ function App() {
         </div>
         <div className="gallery-layout">
           <div className="collage-area" ref={collageRef} aria-label="Free collage canvas">
-            <div className="canvas-topline"><span className="mono">YOUR WALL</span><span className="canvas-tip">Arrange frames here · drop one on the reel to return it.</span></div>
+            <div className="canvas-topline"><span className="mono">YOUR WALL</span><span className="canvas-tip">Arrange the frames here · drop one on the reel to return it.</span></div>
             <div className="canvas-crosshair crosshair-one" /><div className="canvas-crosshair crosshair-two" />
             {placed.length === 0 && <div className="canvas-empty"><span className="empty-star" aria-hidden="true" /><span className="serif">A scene takes shape<br />one frame at a time.</span><span className="mono">DRAG FROM THE REEL <ArrowRight size={12} /></span></div>}
             {placed.map((item) => {
@@ -306,7 +306,7 @@ function App() {
           </div>
           <div className="reel-panel">
             <div className="reel-heading"><span className="section-label">THE REVOLVER</span><span className="mono reel-count">{String(portfolioWorks.length).padStart(2, '0')} FRAMES</span></div>
-            <p className="reel-instruction">Drag a frame onto your wall.<br />Turn the cylinder vertically to look around.</p>
+            <p className="reel-instruction">Drag a frame onto your wall.<br />Drag, scroll, or press the arrow buttons to the cylinder vertically to look around.</p>
             <div className="reel-control" ref={reelRef} onPointerDown={beginReelDrag} onWheel={rotateWithWheel} aria-label="Interactive vertical work carousel. Drag up or down, or use the mouse wheel to rotate.">
               <div className="reel-axis" />
               {portfolioWorks.map((work, index) => {
@@ -391,9 +391,9 @@ function App() {
         <div className="section-head"><span className="section-label">04 / MAKE SOMETHING</span><span className="mono section-count">COMMISSIONS OPEN <b>●</b></span></div>
         <div className="contact-main">
           <h2 className="serif">Have a world<br />in <em>mind?</em></h2>
-          <div className="contact-action"><p>Tell me what you’re building.<br />Let’s find its light.</p><a href="https://discord.com/users/433610512962420756" target="_blank" rel="noreferrer" className="contact-link">Message me on Discord <MoveUpRight size={16} /></a><div className="contact-socials mono"><a href="https://www.roblox.com/users/98237807/profile" target="_blank" rel="noreferrer">ROBLOX <ArrowUpRight size={11} /></a><a href="https://ko-fi.com/azureae" target="_blank" rel="noreferrer">KO-FI <ArrowUpRight size={11} /></a></div></div>
+          <div className="contact-action"><p>Feel free to tell me.<br />Let’s find its light.</p><a href="https://discord.com/users/433610512962420756" target="_blank" rel="noreferrer" className="contact-link">Message me on Discord <MoveUpRight size={16} /></a><div className="contact-socials mono"><a href="https://www.roblox.com/users/98237807/profile" target="_blank" rel="noreferrer">ROBLOX <ArrowUpRight size={11} /></a><a href="https://ko-fi.com/azureae" target="_blank" rel="noreferrer">KO-FI <ArrowUpRight size={11} /></a></div></div>
         </div>
-        <footer className="footer"><a className="footer-mark serif" href="#home">nowazure<span>.</span></a><span className="mono">ROBLOX STUDIO · BLENDER · PHOTOSHOP</span><a className="back-top mono" href="#home">BACK TO THE LIGHT ↑</a><span className="mono footer-year">© NOWAZURE</span></footer>
+        <footer className="footer"><a className="footer-mark serif" href="#home">nowazure<span>.</span></a><span className="mono">ROBLOX STUDIO · BLENDER · PAINT.NET</span><a className="back-top mono" href="#home">BACK TO THE LIGHT ↑</a><span className="mono footer-year">© NOWAZURE</span></footer>
       </section>
 
       {selected && <div className="work-modal" role="dialog" aria-modal="true" aria-label={selected.title} onClick={() => setSelected(null)} onKeyDown={(event) => { if (event.key === 'Escape') setSelected(null); }}>

@@ -25,12 +25,13 @@ export function HorizontalRevolver({
   onBeginWorkDrag,
   onPlaceByKeyboard,
 }: HorizontalRevolverProps) {
-  // Constant pixel distance between cards
-  const itemSpacing = 175; 
-  // Ensure the invisible track is tall enough so cards can teleport seamlessly off-screen
-  const trackHeight = Math.max(availableWorks.length * itemSpacing, 1000); 
+  const rotationStep = allWorks.length > 0 ? 360 / allWorks.length : 0;
+  
+  // The radius of our "Ferris wheel". 
+  // 300px creates a gentle curve as the cards travel top to bottom.
+  const radius = 300; 
 
-  // Locks the native window scroll when hovering the revolver
+  // Locks native window scrolling when hovering the revolver
   useEffect(() => {
     const el = reelRef.current;
     if (!el) return;
@@ -41,7 +42,8 @@ export function HorizontalRevolver({
 
   const rotateWithWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
     const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-    onRotate(rotation - delta * 0.4); 
+    // Spinning the mouse wheel now moves the rotation angle directly
+    onRotate(rotation + delta * 0.15); 
   };
 
   return (
@@ -60,23 +62,26 @@ export function HorizontalRevolver({
         onWheel={rotateWithWheel}
         role="group"
         style={{
-          // This applies the exact top/bottom dropshadow gradients from your paint.net mockup
+          overflow: 'hidden',
+          // The gradient dropshadows from your Paint.net reference
           WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
           maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
         }}
       >
-        <div
-          className="reel-axis"
-          style={{ transform: 'translate(-50%, -50%)', opacity: 0.05, height: '80%' }}
-          aria-hidden="true"
-        />
+        <div className="reel-axis" style={{ display: 'none' }} aria-hidden="true" />
+        
         {availableWorks.map((work, availableIndex) => {
           const originalIndex = allWorks.findIndex((entry) => entry.id === work.id);
           
-          // Continuous looping vertical math
-          let offset = ((availableIndex * itemSpacing) + rotation) % trackHeight;
-          if (offset < 0) offset += trackHeight;
-          if (offset > trackHeight / 2) offset -= trackHeight;
+          // 180 degrees places the 0th item on the far-left edge of the circle
+          const angle = (availableIndex / availableWorks.length) * 360 + rotation + 180;
+          const radians = (angle * Math.PI) / 180;
+          
+          const x = Math.cos(radians) * radius;
+          const y = Math.sin(radians) * radius;
+          
+          // Hides the cards completely when they travel down the right side of the wheel
+          const isRightSide = Math.cos(radians) > 0;
 
           return (
             <button
@@ -85,10 +90,14 @@ export function HorizontalRevolver({
               data-work-id={work.id}
               className="reel-card"
               style={{
-                left: '50%',
-                top: `calc(50% + ${offset}px)`,
+                // Anchor the center of the wheel far to the right (50% + 300px)
+                left: `calc(50% + ${radius}px + ${x}px)`,
+                top: `calc(50% + ${y}px)`,
+                // The cards translate but do NOT rotate, keeping them horizontal
                 transform: `translate(-50%, -50%)`,
                 zIndex: 100,
+                opacity: isRightSide ? 0 : 1,
+                pointerEvents: isRightSide ? 'none' : 'auto',
               }}
               onPointerDown={(event) => onBeginWorkDrag(event, work)}
               onKeyDown={(event) => {
@@ -113,19 +122,11 @@ export function HorizontalRevolver({
         <div className="reel-reticle" aria-hidden="true"><span /><span /></div>
       </div>
       <div className="reel-controls">
-        <button
-          className="rotate-button"
-          type="button"
-          onClick={() => onRotate(rotation + itemSpacing)}
-        >
+        <button className="rotate-button" type="button" onClick={() => onRotate(rotation + rotationStep)}>
           <ArrowDown size={15} />
         </button>
         <span className="mono">DRAG / SCROLL</span>
-        <button
-          className="rotate-button"
-          type="button"
-          onClick={() => onRotate(rotation - itemSpacing)}
-        >
+        <button className="rotate-button" type="button" onClick={() => onRotate(rotation - rotationStep)}>
           <ArrowUp size={15} />
         </button>
       </div>

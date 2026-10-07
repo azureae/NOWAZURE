@@ -65,15 +65,13 @@ function App() {
     const index = worksAfterReturn.findIndex((work) => work.id === workId);
     if (!controlBounds || index < 0 || worksAfterReturn.length === 0) return null;
     
-    const itemSpacing = 175;
-    const trackHeight = Math.max(worksAfterReturn.length * itemSpacing, 1000);
-    let offset = ((index * itemSpacing) + rotationRef.current) % trackHeight;
-    if (offset < 0) offset += trackHeight;
-    if (offset > trackHeight / 2) offset -= trackHeight;
+    // Calculates the return destination on the circular Ferris wheel path
+    const angle = ((index / worksAfterReturn.length) * 360 + rotationRef.current + 180) * Math.PI / 180;
+    const radius = 300;
 
     return {
-      x: controlBounds.left + controlBounds.width / 2,
-      y: controlBounds.top + controlBounds.height / 2 + offset,
+      x: controlBounds.left + (controlBounds.width / 2) + radius + (Math.cos(angle) * radius),
+      y: controlBounds.top + (controlBounds.height / 2) + (Math.sin(angle) * radius),
     };
   };
 
@@ -109,26 +107,16 @@ function App() {
     if (imageZoom <= 1) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    imagePanGestureRef.current = {
-      x: event.clientX,
-      y: event.clientY,
-      originX: imagePan.x,
-      originY: imagePan.y,
-    };
+    imagePanGestureRef.current = { x: event.clientX, y: event.clientY, originX: imagePan.x, originY: imagePan.y };
   };
 
   const moveImagePan = (event: ReactPointerEvent<HTMLDivElement>) => {
     const gesture = imagePanGestureRef.current;
     if (!gesture) return;
-    setImagePan({
-      x: gesture.originX + event.clientX - gesture.x,
-      y: gesture.originY + event.clientY - gesture.y,
-    });
+    setImagePan({ x: gesture.originX + event.clientX - gesture.x, y: gesture.originY + event.clientY - gesture.y });
   };
 
-  const endImagePan = () => {
-    imagePanGestureRef.current = null;
-  };
+  const endImagePan = () => { imagePanGestureRef.current = null; };
 
   const sendWorksBack = (items: PlacedWork[], stagger = 0.05) => {
     const collage = collageRef.current;
@@ -144,14 +132,8 @@ function App() {
       const fromX = bounds ? bounds.left + bounds.width / 2 : collageBounds.left + (item.x / 100) * collageBounds.width;
       const fromY = bounds ? bounds.top + bounds.height / 2 : collageBounds.top + (item.y / 100) * collageBounds.height;
       return [{
-        id: item.id,
-        workId: item.workId,
-        fromX,
-        fromY,
-        toX: target.x,
-        toY: target.y,
-        width: bounds?.width ?? 150,
-        delay: reducedMotion ? 0 : index * stagger,
+        id: item.id, workId: item.workId, fromX, fromY, toX: target.x, toY: target.y,
+        width: bounds?.width ?? 150, delay: reducedMotion ? 0 : index * stagger,
       }];
     });
     setReturnFlights((current) => [...current, ...flights]);
@@ -167,9 +149,7 @@ function App() {
     if (reducedMotion || homepageSlideshow.scenes.length < 2) return;
     const timer = window.setInterval(() => {
       setWipe(true);
-      window.setTimeout(() => {
-        setSceneIndex((index) => (index + 1) % homepageSlideshow.scenes.length);
-      }, homepageSlideshow.wipeMs * 0.48);
+      window.setTimeout(() => setSceneIndex((index) => (index + 1) % homepageSlideshow.scenes.length), homepageSlideshow.wipeMs * 0.48);
       window.setTimeout(() => setWipe(false), homepageSlideshow.wipeMs);
     }, homepageSlideshow.intervalMs);
     return () => window.clearInterval(timer);
@@ -188,24 +168,15 @@ function App() {
     if (!imageViewerOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
+    return () => { document.body.style.overflow = previousOverflow; };
   }, [imageViewerOpen]);
 
   useEffect(() => {
     if (!imageViewerOpen) return;
     const handleViewerKeys = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        closeImageViewer();
-      } else if (event.key === '+' || event.key === '=') {
-        event.preventDefault();
-        updateImageZoom(imageZoom + 0.25);
-      } else if (event.key === '-') {
-        event.preventDefault();
-        updateImageZoom(imageZoom - 0.25);
-      }
+      if (event.key === 'Escape') { event.preventDefault(); closeImageViewer(); } 
+      else if (event.key === '+' || event.key === '=') { event.preventDefault(); updateImageZoom(imageZoom + 0.25); } 
+      else if (event.key === '-') { event.preventDefault(); updateImageZoom(imageZoom - 0.25); }
     };
     window.addEventListener('keydown', handleViewerKeys);
     return () => window.removeEventListener('keydown', handleViewerKeys);
@@ -216,7 +187,8 @@ function App() {
       const gesture = gestureRef.current;
       if (!gesture) return;
       if (gesture.kind === 'reel') {
-        setRotation(gesture.rotation + (event.clientY - gesture.y) * 1.5);
+        // Dragging the background UP/DOWN now smoothly rotates the wheel
+        setRotation(gesture.rotation - (event.clientY - gesture.y) * 0.5);
       } else if (gesture.kind === 'gallery-item') {
         setDragGhost({ workId: gesture.workId, x: event.clientX, y: event.clientY });
       } else if (gesture.kind === 'canvas-item') {
@@ -243,21 +215,15 @@ function App() {
           const bounds = collageRef.current.getBoundingClientRect();
           setTopLayer((layer) => layer + 1);
           setPlaced((items) => [...items, {
-            id: gesture.id,
-            workId: gesture.workId,
+            id: gesture.id, workId: gesture.workId,
             x: Math.max(7, Math.min(93, ((event.clientX - bounds.left) / bounds.width) * 100)),
             y: Math.max(12, Math.min(88, ((event.clientY - bounds.top) / bounds.height) * 100)),
-            tilt: [-5, 3, 6, -2, 4][items.length % 5],
-            layer: topLayer + 1,
+            tilt: [-5, 3, 6, -2, 4][items.length % 5], layer: topLayer + 1,
           }]);
         }
       } else if (gesture.kind === 'canvas-item' && reelRef.current) {
         const bounds = reelRef.current.getBoundingClientRect();
-        const overReel =
-          event.clientX >= bounds.left &&
-          event.clientX <= bounds.right &&
-          event.clientY >= bounds.top &&
-          event.clientY <= bounds.bottom;
+        const overReel = event.clientX >= bounds.left && event.clientX <= bounds.right && event.clientY >= bounds.top && event.clientY <= bounds.bottom;
         if (overReel) {
           const item = placedRef.current.find((value) => value.id === gesture.id);
           if (item) {
@@ -271,13 +237,11 @@ function App() {
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
-    return () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-    };
+    return () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
   }, [topLayer]);
 
   const beginReelDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    // Isolated background drag: ignores clicks if they are directly on a card
     if ((event.target as HTMLElement).closest('[data-work-card]')) return;
     gestureRef.current = { kind: 'reel', x: event.clientX, y: event.clientY, rotation };
   };
@@ -362,7 +326,7 @@ function App() {
           <h2 className="serif">Who am I,<br /><em>and what do I do?</em></h2>
           <div className="about-prose">
             <p>I’m nowazure, a Philippines-based Roblox vignette artist drawn to the moments between the action. I build cinematic scenes, thumbnails, logos, and visual identities that give a game its own atmosphere.</p>
-            <p>Before I start working, I always find myself asking: If I was in that moment, how would I capture it? Then, the answer becomes the mood and the story. Afterwards, you make attempts at imitating life just like how you'd see it in your own eyes.</p>
+            <p>Before I start working, I always find myself asking: If I was in that moment, how would I capture it? The answer becomes the mood and the story. Afterwards, you make attempts at imitating life just like how you'd see it in your own eyes.</p>
             <div className="tool-list"><span className="section-label">IN THE TOOLKIT</span><div><span>Roblox Studio</span><i /> <span>Blender</span><i /> <span>Paint.NET</span></div></div>
           </div>
         </div>
@@ -373,7 +337,7 @@ function App() {
         <div className="works-heading section-shell">
           <div><span className="section-label">03 / THE COLLECTION</span><h2 className="serif">Make a little <em>room.</em></h2></div>
           <div className="works-heading-actions">
-            <p>Pull a frame from the reel.<br />Place it wherever you want. Have fun.</p>
+            <p>Pull a frame from the reel.<br />Place it where it belongs.</p>
             <button
               className="return-all"
               type="button"
@@ -389,7 +353,7 @@ function App() {
         </div>
         <div className="gallery-layout">
           <div className="collage-area" ref={collageRef} aria-label="Free collage canvas">
-            <div className="canvas-topline"><span className="mono">YOUR WALL</span><span className="canvas-tip">Arrange frames here · drop one back to the reel to return it.</span></div>
+            <div className="canvas-topline"><span className="mono">YOUR WALL</span><span className="canvas-tip">Arrange frames here · drop one on the reel to return it.</span></div>
             <div className="canvas-crosshair crosshair-one" /><div className="canvas-crosshair crosshair-two" />
             {placed.length === 0 && <div className="canvas-empty"><span className="empty-star" aria-hidden="true" /><span className="serif">A scene takes shape<br />one frame at a time.</span><span className="mono">DRAG FROM THE REEL <ArrowRight size={12} /></span></div>}
             {placed.map((item) => {

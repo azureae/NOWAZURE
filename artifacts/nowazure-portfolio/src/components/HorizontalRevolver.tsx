@@ -1,5 +1,5 @@
 import { useEffect, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent, type RefObject } from 'react';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 import type { PortfolioWork } from '../data/portfolio.config';
 
 type HorizontalRevolverProps = {
@@ -25,7 +25,10 @@ export function HorizontalRevolver({
   onBeginWorkDrag,
   onPlaceByKeyboard,
 }: HorizontalRevolverProps) {
-  const rotationStep = allWorks.length > 0 ? 360 / allWorks.length : 0;
+  // Constant pixel distance between cards
+  const itemSpacing = 175; 
+  // Ensure the invisible track is tall enough so cards can teleport seamlessly off-screen
+  const trackHeight = Math.max(availableWorks.length * itemSpacing, 1000); 
 
   // Locks the native window scroll when hovering the revolver
   useEffect(() => {
@@ -38,7 +41,7 @@ export function HorizontalRevolver({
 
   const rotateWithWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
     const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-    onRotate(rotation + delta * 0.15); // Slightly slower for the flat wheel
+    onRotate(rotation - delta * 0.4); 
   };
 
   return (
@@ -49,39 +52,31 @@ export function HorizontalRevolver({
           {String(availableWorks.length).padStart(2, '0')} / {String(allWorks.length).padStart(2, '0')} FRAMES
         </span>
       </div>
-      <p className="reel-instruction">Drag a frame onto your wall.<br />Turn the reel left or right to look around.</p>
+      <p className="reel-instruction">Drag a frame onto your wall.<br />Scroll or drag up/down to browse.</p>
       <div
         className="reel-control"
         ref={reelRef}
         onPointerDown={onBeginReelDrag}
         onWheel={rotateWithWheel}
         role="group"
+        style={{
+          // This applies the exact top/bottom dropshadow gradients from your paint.net mockup
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
+        }}
       >
         <div
           className="reel-axis"
-          style={{ 
-            left: '85%', top: '50%', 
-            width: '300px', height: '300px',
-            transform: 'translate(-50%, -50%)',
-            opacity: 0.15
-          }}
+          style={{ transform: 'translate(-50%, -50%)', opacity: 0.05, height: '80%' }}
           aria-hidden="true"
         />
         {availableWorks.map((work, availableIndex) => {
           const originalIndex = allWorks.findIndex((entry) => entry.id === work.id);
           
-          // Add 180 degrees so the first item starts on the visible left side
-          const angle = (availableIndex / availableWorks.length) * 360 + rotation + 180;
-          const radians = (angle * Math.PI) / 180;
-          
-          // 2D Revolver Wheel Math
-          const radius = 150; 
-          const x = Math.cos(radians) * radius;
-          const y = Math.sin(radians) * radius;
-          
-          // Fade the card out smoothly as it rotates behind the right edge
-          const opacity = Math.max(0, 1 - (Math.cos(radians) * 1.5));
-          const isBehind = Math.cos(radians) > 0.4;
+          // Continuous looping vertical math
+          let offset = ((availableIndex * itemSpacing) + rotation) % trackHeight;
+          if (offset < 0) offset += trackHeight;
+          if (offset > trackHeight / 2) offset -= trackHeight;
 
           return (
             <button
@@ -90,13 +85,10 @@ export function HorizontalRevolver({
               data-work-id={work.id}
               className="reel-card"
               style={{
-                left: `calc(85% + ${x}px)`,
-                top: `calc(50% + ${y}px)`,
-                // Tilts the card to match the curvature of the cylinder
-                transform: `translate(-50%, -50%) rotate(${angle - 180}deg)`,
+                left: '50%',
+                top: `calc(50% + ${offset}px)`,
+                transform: `translate(-50%, -50%)`,
                 zIndex: 100,
-                opacity: Math.min(1, opacity),
-                pointerEvents: isBehind ? 'none' : 'auto',
               }}
               onPointerDown={(event) => onBeginWorkDrag(event, work)}
               onKeyDown={(event) => {
@@ -108,7 +100,7 @@ export function HorizontalRevolver({
               aria-label={`${work.title}. Drag to add to canvas.`}
             >
               <img src={work.image} alt="" draggable={false} />
-              <span className="reel-card-no mono" style={{ transform: 'rotate(0deg)' }}>0{originalIndex + 1}</span>
+              <span className="reel-card-no mono">0{originalIndex + 1}</span>
             </button>
           );
         })}
@@ -118,23 +110,23 @@ export function HorizontalRevolver({
             <span>Drag a placed frame back here or reset the canvas.</span>
           </div>
         )}
-        <div className="reel-reticle" style={{ left: '85%', top: '50%' }} aria-hidden="true"><span /><span /></div>
+        <div className="reel-reticle" aria-hidden="true"><span /><span /></div>
       </div>
       <div className="reel-controls">
         <button
           className="rotate-button"
           type="button"
-          onClick={() => onRotate(rotation - rotationStep)}
+          onClick={() => onRotate(rotation + itemSpacing)}
         >
-          <ArrowLeft size={15} />
+          <ArrowDown size={15} />
         </button>
         <span className="mono">DRAG / SCROLL</span>
         <button
           className="rotate-button"
           type="button"
-          onClick={() => onRotate(rotation + rotationStep)}
+          onClick={() => onRotate(rotation - itemSpacing)}
         >
-          <ArrowRight size={15} />
+          <ArrowUp size={15} />
         </button>
       </div>
       <div className="reel-foot"><span className="mono">THE REEL TURNS ONLY WHEN YOU DO.</span></div>

@@ -8,7 +8,7 @@ import { HorizontalRevolver } from './components/HorizontalRevolver';
 type PlacedWork = { id: string; workId: string; x: number; y: number; tilt: number; layer: number };
 type ReturnFlight = { id: string; workId: string; fromX: number; fromY: number; toX: number; toY: number; width: number; delay: number };
 type ActiveGesture =
-  | { kind: 'reel'; x: number; rotation: number }
+  | { kind: 'reel'; x: number; y: number; rotation: number }
   | { kind: 'gallery-item'; id: string; workId: string; x: number; y: number }
   | { kind: 'canvas-item'; id: string; workId: string; x: number; y: number; originX: number; originY: number };
 
@@ -56,7 +56,7 @@ function App() {
   const activeScene = homepageSlideshow.scenes[sceneIndex];
   const availableWorks = portfolioWorks.filter((work) => !placed.some((item) => item.workId === work.id));
 
-const reelSlotCenter = (workId: string, returningWorkIds: string[]) => {
+  const reelSlotCenter = (workId: string, returningWorkIds: string[]) => {
     const controlBounds = reelRef.current?.getBoundingClientRect();
     const returning = new Set(returningWorkIds);
     const worksAfterReturn = portfolioWorks.filter((work) =>
@@ -65,12 +65,15 @@ const reelSlotCenter = (workId: string, returningWorkIds: string[]) => {
     const index = worksAfterReturn.findIndex((work) => work.id === workId);
     if (!controlBounds || index < 0 || worksAfterReturn.length === 0) return null;
     
-    const angle = ((index / worksAfterReturn.length) * 360 + rotationRef.current + 180) * Math.PI / 180;
-    const radius = 150;
+    const itemSpacing = 175;
+    const trackHeight = Math.max(worksAfterReturn.length * itemSpacing, 1000);
+    let offset = ((index * itemSpacing) + rotationRef.current) % trackHeight;
+    if (offset < 0) offset += trackHeight;
+    if (offset > trackHeight / 2) offset -= trackHeight;
 
     return {
-      x: controlBounds.left + (controlBounds.width * 0.85) + Math.cos(angle) * radius,
-      y: controlBounds.top + (controlBounds.height * 0.50) + Math.sin(angle) * radius,
+      x: controlBounds.left + controlBounds.width / 2,
+      y: controlBounds.top + controlBounds.height / 2 + offset,
     };
   };
 
@@ -213,7 +216,7 @@ const reelSlotCenter = (workId: string, returningWorkIds: string[]) => {
       const gesture = gestureRef.current;
       if (!gesture) return;
       if (gesture.kind === 'reel') {
-        setRotation(gesture.rotation + (event.clientX - gesture.x) * 0.48);
+        setRotation(gesture.rotation + (event.clientY - gesture.y) * 1.5);
       } else if (gesture.kind === 'gallery-item') {
         setDragGhost({ workId: gesture.workId, x: event.clientX, y: event.clientY });
       } else if (gesture.kind === 'canvas-item') {
@@ -276,7 +279,7 @@ const reelSlotCenter = (workId: string, returningWorkIds: string[]) => {
 
   const beginReelDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).closest('[data-work-card]')) return;
-    gestureRef.current = { kind: 'reel', x: event.clientX, rotation };
+    gestureRef.current = { kind: 'reel', x: event.clientX, y: event.clientY, rotation };
   };
 
   const beginWorkDrag = (event: ReactPointerEvent<HTMLButtonElement>, work: PortfolioWork) => {
@@ -359,7 +362,7 @@ const reelSlotCenter = (workId: string, returningWorkIds: string[]) => {
           <h2 className="serif">Who am I,<br /><em>and what do I do?</em></h2>
           <div className="about-prose">
             <p>I’m nowazure, a Philippines-based Roblox vignette artist drawn to the moments between the action. I build cinematic scenes, thumbnails, logos, and visual identities that give a game its own atmosphere.</p>
-            <p>Before I start working, I always find myself asking: If I was in that moment, how would I capture it? The answer becomes the mood and the story. Afterwards, you make attempts at imitating life just like how you'd see it in your own eyes.</p>
+            <p>Before I start working, I always find myself asking: If I was in that moment, how would I capture it? Then, the answer becomes the mood and the story. Afterwards, you make attempts at imitating life just like how you'd see it in your own eyes.</p>
             <div className="tool-list"><span className="section-label">IN THE TOOLKIT</span><div><span>Roblox Studio</span><i /> <span>Blender</span><i /> <span>Paint.NET</span></div></div>
           </div>
         </div>
@@ -370,7 +373,7 @@ const reelSlotCenter = (workId: string, returningWorkIds: string[]) => {
         <div className="works-heading section-shell">
           <div><span className="section-label">03 / THE COLLECTION</span><h2 className="serif">Make a little <em>room.</em></h2></div>
           <div className="works-heading-actions">
-            <p>Pull a frame from the reel.<br />Have fun with it.</p>
+            <p>Pull a frame from the reel.<br />Place it wherever you want. Have fun.</p>
             <button
               className="return-all"
               type="button"
@@ -386,7 +389,7 @@ const reelSlotCenter = (workId: string, returningWorkIds: string[]) => {
         </div>
         <div className="gallery-layout">
           <div className="collage-area" ref={collageRef} aria-label="Free collage canvas">
-            <div className="canvas-topline"><span className="mono">YOUR WALL</span><span className="canvas-tip">Arrange frames here · drop one on the reel to return it.</span></div>
+            <div className="canvas-topline"><span className="mono">YOUR WALL</span><span className="canvas-tip">Arrange frames here · drop one back to the reel to return it.</span></div>
             <div className="canvas-crosshair crosshair-one" /><div className="canvas-crosshair crosshair-two" />
             {placed.length === 0 && <div className="canvas-empty"><span className="empty-star" aria-hidden="true" /><span className="serif">A scene takes shape<br />one frame at a time.</span><span className="mono">DRAG FROM THE REEL <ArrowRight size={12} /></span></div>}
             {placed.map((item) => {

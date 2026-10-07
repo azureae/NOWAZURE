@@ -56,7 +56,7 @@ function App() {
   const activeScene = homepageSlideshow.scenes[sceneIndex];
   const availableWorks = portfolioWorks.filter((work) => !placed.some((item) => item.workId === work.id));
 
-  const reelSlotCenter = (workId: string, returningWorkIds: string[]) => {
+const reelSlotCenter = (workId: string, returningWorkIds: string[]) => {
     const controlBounds = reelRef.current?.getBoundingClientRect();
     const returning = new Set(returningWorkIds);
     const worksAfterReturn = portfolioWorks.filter((work) =>
@@ -64,10 +64,13 @@ function App() {
     );
     const index = worksAfterReturn.findIndex((work) => work.id === workId);
     if (!controlBounds || index < 0 || worksAfterReturn.length === 0) return null;
-    const angle = ((index / worksAfterReturn.length) * 360 + rotationRef.current) * Math.PI / 180;
+    
+    const angle = ((index / worksAfterReturn.length) * 360 + rotationRef.current + 180) * Math.PI / 180;
+    const radius = 150;
+
     return {
-      x: controlBounds.left + controlBounds.width / 2 + Math.sin(angle) * 101,
-      y: controlBounds.top + controlBounds.height / 2,
+      x: controlBounds.left + (controlBounds.width * 0.85) + Math.cos(angle) * radius,
+      y: controlBounds.top + (controlBounds.height * 0.50) + Math.sin(angle) * radius,
     };
   };
 
@@ -328,7 +331,7 @@ function App() {
           </motion.div>
           <motion.div className="hero-statement" style={{ opacity: logoOpacity }}>
             <span className="statement-line" />
-            <p>Every piece starts the same way: find where the light falls, then build the scene around the shadow it leaves.</p>
+            <p>Oculos ad astra, pedes in terra.</p>
           </motion.div>
           <a className="hero-cta mono" href="#works">STEP INTO THE WORK <ArrowDownRight size={15} /></a>
         </div>
@@ -353,11 +356,11 @@ function App() {
           <span className="mono section-count">02 / 04</span>
         </div>
         <div className="about-grid">
-          <h2 className="serif">Worlds with<br /><em>a point of view.</em></h2>
+          <h2 className="serif">Who am I,<br /><em>and what do I do?</em></h2>
           <div className="about-prose">
-            <p>I’m Nowazure, a Philippines-based Roblox vignette artist drawn to the moments between the action. I build cinematic scenes, thumbnails, logos, and visual identities that give a game its own atmosphere.</p>
-            <p>Each scene begins with the same question: where does the light fall? The answer becomes the composition, the mood, and the story. Terrain, structures, clutter, custom lighting, and a final grade all support the shot — never just fill the frame.</p>
-            <div className="tool-list"><span className="section-label">IN THE TOOLKIT</span><div><span>Roblox Studio</span><i /> <span>Blender</span><i /> <span>Photoshop</span></div></div>
+            <p>I’m nowazure, a Philippines-based Roblox vignette artist drawn to the moments between the action. I build cinematic scenes, thumbnails, logos, and visual identities that give a game its own atmosphere.</p>
+            <p>Before I start working, I always find myself asking: If I was in that moment, how would I capture it? The answer becomes the mood and the story. Afterwards, you make attempts at imitating life just like how you'd see it in your own eyes.</p>
+            <div className="tool-list"><span className="section-label">IN THE TOOLKIT</span><div><span>Roblox Studio</span><i /> <span>Blender</span><i /> <span>Paint.NET</span></div></div>
           </div>
         </div>
         <div className="about-foot"><span className="mono">SCENE BUILDER / IMAGE MAKER</span><span className="mono">AVAILABLE FOR SELECT PROJECTS <b>●</b></span></div>
@@ -367,7 +370,7 @@ function App() {
         <div className="works-heading section-shell">
           <div><span className="section-label">03 / THE COLLECTION</span><h2 className="serif">Make a little <em>room.</em></h2></div>
           <div className="works-heading-actions">
-            <p>Pull a frame from the reel.<br />Place it where it belongs.</p>
+            <p>Pull a frame from the reel.<br />Have fun with it.</p>
             <button
               className="return-all"
               type="button"

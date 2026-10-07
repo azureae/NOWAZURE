@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import { ArrowDown, ArrowDownRight, ArrowRight, ArrowUpRight, ArrowUp, ChevronDown, Circle, MoveUpRight, RotateCcw, X } from 'lucide-react';
+import { ArrowDown, ArrowDownRight, ArrowRight, ArrowUpRight, ChevronDown, Circle, MoveUpRight, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { portfolioServices, portfolioWorks, type PortfolioWork } from './data/portfolio.config';
 import { homepageSlideshow } from './data/homepage-slideshow.config';
+import { HorizontalRevolver } from './components/HorizontalRevolver';
 
 type PlacedWork = { id: string; workId: string; x: number; y: number; tilt: number; layer: number };
 type ReturnFlight = { id: string; workId: string; fromX: number; fromY: number; toX: number; toY: number; width: number; delay: number };
 type ActiveGesture =
-  | { kind: 'reel'; y: number; rotation: number }
+  | { kind: 'reel'; x: number; rotation: number }
   | { kind: 'gallery-item'; id: string; workId: string; x: number; y: number }
   | { kind: 'canvas-item'; id: string; workId: string; x: number; y: number; originX: number; originY: number };
 
@@ -23,16 +24,24 @@ function App() {
   const heroRef = useRef<HTMLElement>(null);
   const collageRef = useRef<HTMLDivElement>(null);
   const reelRef = useRef<HTMLDivElement>(null);
+  const imageViewerStageRef = useRef<HTMLDivElement>(null);
+  const imageTriggerRef = useRef<HTMLButtonElement>(null);
   const gestureRef = useRef<ActiveGesture | null>(null);
+  const imagePanGestureRef = useRef<{ x: number; y: number; originX: number; originY: number } | null>(null);
+  const rotationRef = useRef(0);
   const lastGalleryDragRef = useRef(0);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [wipe, setWipe] = useState(false);
   const [rotation, setRotation] = useState(0);
+  rotationRef.current = rotation;
   const [placed, setPlaced] = useState<PlacedWork[]>([]);
   const placedRef = useRef<PlacedWork[]>([]);
   placedRef.current = placed;
   const [returnFlights, setReturnFlights] = useState<ReturnFlight[]>([]);
   const [selected, setSelected] = useState<PortfolioWork | null>(null);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [imageZoom, setImageZoom] = useState(1);
+  const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
   const [topLayer, setTopLayer] = useState(1);
   const [menuOpen, setMenuOpen] = useState(false);
   const [dragGhost, setDragGhost] = useState<{ workId: string; x: number; y: number } | null>(null);
@@ -45,24 +54,86 @@ function App() {
   const curtainScale = useTransform(scrollYProgress, [0.02, 0.78], [0.04, 1]);
   const curtainOpacity = useTransform(scrollYProgress, [0.08, 0.45], [0.25, 1]);
   const activeScene = homepageSlideshow.scenes[sceneIndex];
-  const rotationStep = 360 / portfolioWorks.length;
+  const availableWorks = portfolioWorks.filter((work) => !placed.some((item) => item.workId === work.id));
 
-  const reelSlotCenter = (workId: string) => {
-    const cards = Array.from(reelRef.current?.querySelectorAll<HTMLElement>('[data-work-card]') ?? []);
-    const card = cards.find((element) => element.dataset.workId === workId);
-    const bounds = (card ?? reelRef.current)?.getBoundingClientRect();
-    return bounds ? { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 } : null;
+  const reelSlotCenter = (workId: string, returningWorkIds: string[]) => {
+    const controlBounds = reelRef.current?.getBoundingClientRect();
+    const returning = new Set(returningWorkIds);
+    const worksAfterReturn = portfolioWorks.filter((work) =>
+      !placedRef.current.some((item) => item.workId === work.id) || returning.has(work.id),
+    );
+    const index = worksAfterReturn.findIndex((work) => work.id === workId);
+    if (!controlBounds || index < 0 || worksAfterReturn.length === 0) return null;
+    const angle = ((index / worksAfterReturn.length) * 360 + rotationRef.current) * Math.PI / 180;
+    return {
+      x: controlBounds.left + controlBounds.width / 2 + Math.sin(angle) * 101,
+      y: controlBounds.top + controlBounds.height / 2,
+    };
+  };
+
+  const updateImageZoom = (nextZoom: number) => {
+    const zoom = Math.max(0.5, Math.min(3, Math.round(nextZoom * 100) / 100));
+    setImageZoom(zoom);
+    if (zoom <= 1) {
+      setImagePan({ x: 0, y: 0 });
+      imagePanGestureRef.current = null;
+    }
+  };
+
+  const openImageViewer = () => {
+    setImageZoom(1);
+    setImagePan({ x: 0, y: 0 });
+    setImageViewerOpen(true);
+  };
+
+  const closeImageViewer = () => {
+    setImageViewerOpen(false);
+    setImageZoom(1);
+    setImagePan({ x: 0, y: 0 });
+    imagePanGestureRef.current = null;
+    window.requestAnimationFrame(() => imageTriggerRef.current?.focus());
+  };
+
+  const zoomImageWithWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    updateImageZoom(imageZoom + (event.deltaY < 0 ? 0.12 : -0.12));
+  };
+
+  const beginImagePan = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (imageZoom <= 1) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    imagePanGestureRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      originX: imagePan.x,
+      originY: imagePan.y,
+    };
+  };
+
+  const moveImagePan = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const gesture = imagePanGestureRef.current;
+    if (!gesture) return;
+    setImagePan({
+      x: gesture.originX + event.clientX - gesture.x,
+      y: gesture.originY + event.clientY - gesture.y,
+    });
+  };
+
+  const endImagePan = () => {
+    imagePanGestureRef.current = null;
   };
 
   const sendWorksBack = (items: PlacedWork[], stagger = 0.05) => {
     const collage = collageRef.current;
     const collageBounds = collage?.getBoundingClientRect();
     if (!collage || !collageBounds) return;
+    const returningWorkIds = items.map((item) => item.workId);
     const placedElements = Array.from(collage.querySelectorAll<HTMLElement>('[data-placed-id]'));
     const flights = items.flatMap((item, index) => {
       const element = placedElements.find((candidate) => candidate.dataset.placedId === item.id);
       const bounds = element?.getBoundingClientRect();
-      const target = reelSlotCenter(item.workId);
+      const target = reelSlotCenter(item.workId, returningWorkIds);
       if (!target) return [];
       const fromX = bounds ? bounds.left + bounds.width / 2 : collageBounds.left + (item.x / 100) * collageBounds.width;
       const fromY = bounds ? bounds.top + bounds.height / 2 : collageBounds.top + (item.y / 100) * collageBounds.height;
@@ -99,11 +170,47 @@ function App() {
   }, [reducedMotion]);
 
   useEffect(() => {
+    if (!imageViewerOpen) return;
+    const stage = imageViewerStageRef.current;
+    if (!stage) return;
+    const preventBackgroundScroll = (event: WheelEvent) => event.preventDefault();
+    stage.addEventListener('wheel', preventBackgroundScroll, { passive: false });
+    return () => stage.removeEventListener('wheel', preventBackgroundScroll);
+  }, [imageViewerOpen]);
+
+  useEffect(() => {
+    if (!imageViewerOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [imageViewerOpen]);
+
+  useEffect(() => {
+    if (!imageViewerOpen) return;
+    const handleViewerKeys = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeImageViewer();
+      } else if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        updateImageZoom(imageZoom + 0.25);
+      } else if (event.key === '-') {
+        event.preventDefault();
+        updateImageZoom(imageZoom - 0.25);
+      }
+    };
+    window.addEventListener('keydown', handleViewerKeys);
+    return () => window.removeEventListener('keydown', handleViewerKeys);
+  }, [imageViewerOpen, imageZoom]);
+
+  useEffect(() => {
     const move = (event: PointerEvent) => {
       const gesture = gestureRef.current;
       if (!gesture) return;
       if (gesture.kind === 'reel') {
-        setRotation(gesture.rotation + (event.clientY - gesture.y) * 0.48);
+        setRotation(gesture.rotation + (event.clientX - gesture.x) * 0.48);
       } else if (gesture.kind === 'gallery-item') {
         setDragGhost({ workId: gesture.workId, x: event.clientX, y: event.clientY });
       } else if (gesture.kind === 'canvas-item') {
@@ -166,7 +273,7 @@ function App() {
 
   const beginReelDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).closest('[data-work-card]')) return;
-    gestureRef.current = { kind: 'reel', y: event.clientY, rotation };
+    gestureRef.current = { kind: 'reel', x: event.clientX, rotation };
   };
 
   const beginWorkDrag = (event: ReactPointerEvent<HTMLButtonElement>, work: PortfolioWork) => {
@@ -183,13 +290,8 @@ function App() {
     gestureRef.current = { kind: 'canvas-item', id: item.id, workId: item.workId, x: event.clientX, y: event.clientY, originX: item.x, originY: item.y };
   };
 
-  const rotateWithWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-    setRotation((current) => current + delta * 0.28);
-  };
-
   const addByKeyboard = (work: PortfolioWork, index: number) => {
+    if (placedRef.current.some((item) => item.workId === work.id)) return;
     setTopLayer((layer) => layer + 1);
     setPlaced((items) => [
       ...items,
@@ -226,7 +328,7 @@ function App() {
           </motion.div>
           <motion.div className="hero-statement" style={{ opacity: logoOpacity }}>
             <span className="statement-line" />
-            <p>Oculos ad astra, pedes in terra. </p>
+            <p>Every piece starts the same way: find where the light falls, then build the scene around the shadow it leaves.</p>
           </motion.div>
           <a className="hero-cta mono" href="#works">STEP INTO THE WORK <ArrowDownRight size={15} /></a>
         </div>
@@ -251,11 +353,11 @@ function App() {
           <span className="mono section-count">02 / 04</span>
         </div>
         <div className="about-grid">
-          <h2 className="serif">Just who<br /><em>am I?</em></h2>
+          <h2 className="serif">Worlds with<br /><em>a point of view.</em></h2>
           <div className="about-prose">
-            <p>I’m nowazure, a Philippines-based Roblox developer drawn to the moments between the action. I build cinematic scenes, thumbnails, logos, and visual identities that give a game its own atmosphere.</p>
-            <p>Each scene begins with the same question: How would I perceive life happening in this scene? The answer becomes the composition, the mood, and the story. Terrain, structures, clutter, custom lighting, and a final grade all support the shot, even supporting hidden details whenever applicable.</p>
-            <div className="tool-list"><span className="section-label">IN THE TOOLKIT</span><div><span>Roblox Studio</span><i /> <span>Blender</span><i /> <span>Paint.NET</span></div></div>
+            <p>I’m Nowazure, a Philippines-based Roblox vignette artist drawn to the moments between the action. I build cinematic scenes, thumbnails, logos, and visual identities that give a game its own atmosphere.</p>
+            <p>Each scene begins with the same question: where does the light fall? The answer becomes the composition, the mood, and the story. Terrain, structures, clutter, custom lighting, and a final grade all support the shot — never just fill the frame.</p>
+            <div className="tool-list"><span className="section-label">IN THE TOOLKIT</span><div><span>Roblox Studio</span><i /> <span>Blender</span><i /> <span>Photoshop</span></div></div>
           </div>
         </div>
         <div className="about-foot"><span className="mono">SCENE BUILDER / IMAGE MAKER</span><span className="mono">AVAILABLE FOR SELECT PROJECTS <b>●</b></span></div>
@@ -263,17 +365,25 @@ function App() {
 
       <section id="works" className="works-section">
         <div className="works-heading section-shell">
-          <div><span className="section-label">03 / THE COLLECTION</span><h2 className="serif">Take a look <em>around.</em></h2></div>
+          <div><span className="section-label">03 / THE COLLECTION</span><h2 className="serif">Make a little <em>room.</em></h2></div>
           <div className="works-heading-actions">
-            <p>Pull a frame from the reel.<br />Place it wherever you want.</p>
-            <button className="return-all" type="button" onClick={returnAll} disabled={placed.length === 0} data-testid="button-return-all">
-              <RotateCcw size={13} aria-hidden="true" /> RETURN ALL <span>{String(placed.length).padStart(2, '0')}</span>
+            <p>Pull a frame from the reel.<br />Place it where it belongs.</p>
+            <button
+              className="return-all"
+              type="button"
+              onClick={returnAll}
+              disabled={placed.length === 0}
+              aria-label="Reset canvas and return all frames to the Revolver"
+              title="Return every frame to the Revolver"
+              data-testid="button-return-all"
+            >
+              <RotateCcw size={13} aria-hidden="true" /> RESET CANVAS <span>{String(placed.length).padStart(2, '0')}</span>
             </button>
           </div>
         </div>
         <div className="gallery-layout">
           <div className="collage-area" ref={collageRef} aria-label="Free collage canvas">
-            <div className="canvas-topline"><span className="mono">YOUR WALL</span><span className="canvas-tip">Arrange the frames here · drop one on the reel to return it.</span></div>
+            <div className="canvas-topline"><span className="mono">YOUR WALL</span><span className="canvas-tip">Arrange frames here · drop one on the reel to return it.</span></div>
             <div className="canvas-crosshair crosshair-one" /><div className="canvas-crosshair crosshair-two" />
             {placed.length === 0 && <div className="canvas-empty"><span className="empty-star" aria-hidden="true" /><span className="serif">A scene takes shape<br />one frame at a time.</span><span className="mono">DRAG FROM THE REEL <ArrowRight size={12} /></span></div>}
             {placed.map((item) => {
@@ -304,47 +414,20 @@ function App() {
             })}
             <div className="canvas-coordinate mono" role="status" aria-live="polite">N° {String(placed.length).padStart(2, '0')} / WALL</div>
           </div>
-          <div className="reel-panel">
-            <div className="reel-heading"><span className="section-label">THE REVOLVER</span><span className="mono reel-count">{String(portfolioWorks.length).padStart(2, '0')} FRAMES</span></div>
-            <p className="reel-instruction">Drag a frame onto your wall.<br />Drag, scroll, or press the arrow buttons to the cylinder vertically to look around.</p>
-            <div className="reel-control" ref={reelRef} onPointerDown={beginReelDrag} onWheel={rotateWithWheel} aria-label="Interactive vertical work carousel. Drag up or down, or use the mouse wheel to rotate.">
-              <div className="reel-axis" />
-              {portfolioWorks.map((work, index) => {
-                const angle = (index / portfolioWorks.length) * 360 + rotation;
-                const radians = angle * Math.PI / 180;
-                const z = Math.cos(radians) * 100;
-                const y = Math.sin(radians) * 108;
-                const scale = 0.73 + ((z + 100) / 200) * 0.3;
-                const isFront = z > 20;
-                return <button
-                  key={work.id}
-                  data-work-card
-                  data-work-id={work.id}
-                  data-testid={`reel-frame-${work.id}`}
-                  className={`reel-card ${isFront ? 'is-front' : ''}`}
-                  style={{ left: '50%', top: `calc(50% + ${y}px)`, transform: `translate3d(-50%, -50%, ${z}px) scale(${scale})`, zIndex: Math.round(z + 110), opacity: z < -75 ? .52 : 1 }}
-                  onPointerDown={(event) => beginWorkDrag(event, work)}
-                  onClick={() => { if (Date.now() - lastGalleryDragRef.current > 250) setSelected(work); }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') { event.preventDefault(); setSelected(work); }
-                    if (event.key === ' ') { event.preventDefault(); addByKeyboard(work, index); }
-                  }}
-                  aria-label={`${work.title}. Drag to add to canvas, click or press Enter to inspect, press Space to place.`}
-                  title={`Drag ${work.title} to your wall`}
-                >
-                  <img src={work.image} alt="" draggable={false} />
-                  <span className="reel-card-no mono">0{index + 1}</span>
-                </button>;
-              })}
-              <div className="reel-reticle" aria-hidden="true"><span /><span /></div>
-            </div>
-            <div className="reel-controls">
-              <button className="rotate-button" onClick={() => setRotation((angle) => angle - rotationStep)} aria-label="Rotate reel up" data-testid="button-rotate-reel-up"><ArrowUp size={15} /></button>
-              <span className="mono">DRAG UP / DOWN · SCROLL</span>
-              <button className="rotate-button" onClick={() => setRotation((angle) => angle + rotationStep)} aria-label="Rotate reel down" data-testid="button-rotate-reel-down"><ArrowDown size={15} /></button>
-            </div>
-            <div className="reel-foot"><span className="mono">THE CYLINDER TURNS ONLY WHEN YOU DO.</span><ArrowUp size={13} /></div>
-          </div>
+          <HorizontalRevolver
+            allWorks={portfolioWorks}
+            availableWorks={availableWorks}
+            reelRef={reelRef}
+            rotation={rotation}
+            onRotate={setRotation}
+            onBeginReelDrag={beginReelDrag}
+            onBeginWorkDrag={beginWorkDrag}
+            onOpenWork={setSelected}
+            onClickWork={(work) => {
+              if (Date.now() - lastGalleryDragRef.current > 250) setSelected(work);
+            }}
+            onPlaceByKeyboard={addByKeyboard}
+          />
         </div>
       </section>
 
@@ -391,18 +474,56 @@ function App() {
         <div className="section-head"><span className="section-label">04 / MAKE SOMETHING</span><span className="mono section-count">COMMISSIONS OPEN <b>●</b></span></div>
         <div className="contact-main">
           <h2 className="serif">Have a world<br />in <em>mind?</em></h2>
-          <div className="contact-action"><p>Feel free to tell me.<br />Let’s find its light.</p><a href="https://discord.com/users/433610512962420756" target="_blank" rel="noreferrer" className="contact-link">Message me on Discord <MoveUpRight size={16} /></a><div className="contact-socials mono"><a href="https://www.roblox.com/users/98237807/profile" target="_blank" rel="noreferrer">ROBLOX <ArrowUpRight size={11} /></a><a href="https://ko-fi.com/azureae" target="_blank" rel="noreferrer">KO-FI <ArrowUpRight size={11} /></a></div></div>
+          <div className="contact-action"><p>Tell me what you’re building.<br />Let’s find its light.</p><a href="https://discord.com/users/433610512962420756" target="_blank" rel="noreferrer" className="contact-link">Message me on Discord <MoveUpRight size={16} /></a><div className="contact-socials mono"><a href="https://www.roblox.com/users/98237807/profile" target="_blank" rel="noreferrer">ROBLOX <ArrowUpRight size={11} /></a><a href="https://ko-fi.com/azureae" target="_blank" rel="noreferrer">KO-FI <ArrowUpRight size={11} /></a></div></div>
         </div>
-        <footer className="footer"><a className="footer-mark serif" href="#home">nowazure<span>.</span></a><span className="mono">ROBLOX STUDIO · BLENDER · PAINT.NET</span><a className="back-top mono" href="#home">BACK TO THE LIGHT ↑</a><span className="mono footer-year">© NOWAZURE</span></footer>
+        <footer className="footer"><a className="footer-mark serif" href="#home">nowazure<span>.</span></a><span className="mono">ROBLOX STUDIO · BLENDER · PHOTOSHOP</span><a className="back-top mono" href="#home">BACK TO THE LIGHT ↑</a><span className="mono footer-year">© NOWAZURE</span></footer>
       </section>
 
-      {selected && <div className="work-modal" role="dialog" aria-modal="true" aria-label={selected.title} onClick={() => setSelected(null)} onKeyDown={(event) => { if (event.key === 'Escape') setSelected(null); }}>
-        <button className="modal-close" onClick={() => setSelected(null)} aria-label="Close preview"><X size={18} /></button>
-        <div className="modal-card" onClick={(event) => event.stopPropagation()}>
-          <img src={selected.image} alt={selected.title} />
-          <div className="modal-copy"><div className="modal-overline mono"><span>{selected.category}</span><span>{selected.year}</span></div><h2 className="serif">{selected.title}</h2><p>{selected.description}</p><span className="modal-note mono">{selected.note}</span></div>
+      {selected && (imageViewerOpen ? (
+        <div className="image-viewer" role="dialog" aria-modal="true" aria-label={`Image-only view of ${selected.title}`}>
+          <button className="image-viewer-close" type="button" onClick={closeImageViewer} aria-label="Close image view" autoFocus>
+            <X size={20} />
+          </button>
+          <div
+            className={`image-viewer-stage ${imageZoom > 1 ? 'is-zoomed' : ''}`}
+            ref={imageViewerStageRef}
+            onPointerDown={beginImagePan}
+            onPointerMove={moveImagePan}
+            onPointerUp={endImagePan}
+            onPointerCancel={endImagePan}
+            onWheel={zoomImageWithWheel}
+          >
+            <img
+              src={selected.image}
+              alt={selected.title}
+              draggable={false}
+              style={{ transform: `translate3d(${imagePan.x}px, ${imagePan.y}px, 0) scale(${imageZoom})` }}
+            />
+          </div>
+          <div className="image-viewer-controls" role="group" aria-label="Image zoom controls">
+            <button type="button" onClick={() => updateImageZoom(imageZoom - 0.25)} disabled={imageZoom <= 0.5} aria-label="Zoom out">
+              <ZoomOut size={17} />
+            </button>
+            <span className="mono" role="status" aria-live="polite">{Math.round(imageZoom * 100)}%</span>
+            <button type="button" onClick={() => updateImageZoom(imageZoom + 0.25)} disabled={imageZoom >= 3} aria-label="Zoom in">
+              <ZoomIn size={17} />
+            </button>
+            <button className="image-viewer-reset mono" type="button" onClick={() => updateImageZoom(1)}>RESET</button>
+            <span className="image-viewer-hint mono">SCROLL TO ZOOM · DRAG TO PAN</span>
+          </div>
         </div>
-      </div>}
+      ) : (
+        <div className="work-modal" role="dialog" aria-modal="true" aria-label={selected.title} onClick={() => setSelected(null)} onKeyDown={(event) => { if (event.key === 'Escape') setSelected(null); }}>
+          <button className="modal-close" onClick={() => setSelected(null)} aria-label="Close preview"><X size={18} /></button>
+          <div className="modal-card" onClick={(event) => event.stopPropagation()}>
+            <button ref={imageTriggerRef} className="modal-image-trigger" type="button" onClick={openImageViewer} aria-label={`Open full-screen image viewer for ${selected.title}`}>
+              <img src={selected.image} alt={selected.title} draggable={false} />
+              <span className="modal-image-hint mono"><ZoomIn size={13} /> VIEW IMAGE</span>
+            </button>
+            <div className="modal-copy"><div className="modal-overline mono"><span>{selected.category}</span><span>{selected.year}</span></div><h2 className="serif">{selected.title}</h2><p>{selected.description}</p><span className="modal-note mono">{selected.note}</span></div>
+          </div>
+        </div>
+      ))}
       {dragGhost && (() => {
         const work = portfolioWorks.find((item) => item.id === dragGhost.workId);
         return work ? <div className="drag-ghost" style={{ left: dragGhost.x, top: dragGhost.y }} aria-hidden="true"><img src={work.image} alt="" /><span className="mono">{work.title}</span></div> : null;

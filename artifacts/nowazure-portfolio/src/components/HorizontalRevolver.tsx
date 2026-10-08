@@ -25,11 +25,10 @@ export function HorizontalRevolver({
   onBeginWorkDrag,
   onPlaceByKeyboard,
 }: HorizontalRevolverProps) {
-  const rotationStep = allWorks.length > 0 ? 360 / allWorks.length : 0;
-  
-  // The radius of our "Ferris wheel". 
-  // 300px creates a gentle curve as the cards travel top to bottom.
-  const radius = 300; 
+  // Compact radius so the movement area feels natural and close
+  const radius = 150; 
+  // Fixed degrees between each card so they stay tightly packed regardless of how many are left
+  const angleStep = 38; 
 
   // Locks native window scrolling when hovering the revolver
   useEffect(() => {
@@ -42,8 +41,7 @@ export function HorizontalRevolver({
 
   const rotateWithWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
     const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-    // Spinning the mouse wheel now moves the rotation angle directly
-    onRotate(rotation + delta * 0.15); 
+    onRotate(rotation - delta * 0.2); 
   };
 
   return (
@@ -63,9 +61,9 @@ export function HorizontalRevolver({
         role="group"
         style={{
           overflow: 'hidden',
-          // The gradient dropshadows from your Paint.net reference
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
-          maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
+          // Your exact Paint.net top and bottom dropshadow gradient viewports
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)',
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)',
         }}
       >
         <div className="reel-axis" style={{ display: 'none' }} aria-hidden="true" />
@@ -73,15 +71,15 @@ export function HorizontalRevolver({
         {availableWorks.map((work, availableIndex) => {
           const originalIndex = allWorks.findIndex((entry) => entry.id === work.id);
           
-          // 180 degrees places the 0th item on the far-left edge of the circle
-          const angle = (availableIndex / availableWorks.length) * 360 + rotation + 180;
+          // Tight, fixed spacing per card along the circular path
+          const angle = (availableIndex * angleStep) + rotation + 180;
           const radians = (angle * Math.PI) / 180;
           
           const x = Math.cos(radians) * radius;
           const y = Math.sin(radians) * radius;
           
-          // Hides the cards completely when they travel down the right side of the wheel
-          const isRightSide = Math.cos(radians) > 0;
+          // Smoothly hides cards as they curve around to the hidden right side
+          const isRightSide = Math.cos(radians) > 0.15;
 
           return (
             <button
@@ -90,10 +88,9 @@ export function HorizontalRevolver({
               data-work-id={work.id}
               className="reel-card"
               style={{
-                // Anchor the center of the wheel far to the right (50% + 300px)
+                // Anchor center shifted comfortably to the right
                 left: `calc(50% + ${radius}px + ${x}px)`,
                 top: `calc(50% + ${y}px)`,
-                // The cards translate but do NOT rotate, keeping them horizontal
                 transform: `translate(-50%, -50%)`,
                 zIndex: 100,
                 opacity: isRightSide ? 0 : 1,
@@ -122,11 +119,11 @@ export function HorizontalRevolver({
         <div className="reel-reticle" aria-hidden="true"><span /><span /></div>
       </div>
       <div className="reel-controls">
-        <button className="rotate-button" type="button" onClick={() => onRotate(rotation + rotationStep)}>
+        <button className="rotate-button" type="button" onClick={() => onRotate(rotation + angleStep)}>
           <ArrowDown size={15} />
         </button>
         <span className="mono">DRAG / SCROLL</span>
-        <button className="rotate-button" type="button" onClick={() => onRotate(rotation - rotationStep)}>
+        <button className="rotate-button" type="button" onClick={() => onRotate(rotation - angleStep)}>
           <ArrowUp size={15} />
         </button>
       </div>

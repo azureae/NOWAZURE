@@ -9,6 +9,7 @@ type PlacedWork = { id: string; workId: string; x: number; y: number; tilt: numb
 type ReturnFlight = { id: string; workId: string; fromX: number; fromY: number; toX: number; toY: number; width: number; delay: number };
 type ActiveGesture =
   | { kind: 'reel'; x: number; y: number; rotation: number }
+  | { kind: 'pending-card'; id: string; workId: string; startX: number; startY: number; rotation: number }
   | { kind: 'gallery-item'; id: string; workId: string; x: number; y: number }
   | { kind: 'canvas-item'; id: string; workId: string; x: number; y: number; originX: number; originY: number };
 
@@ -56,22 +57,25 @@ function App() {
   const activeScene = homepageSlideshow.scenes[sceneIndex];
   const availableWorks = portfolioWorks.filter((work) => !placed.some((item) => item.workId === work.id));
 
-  const reelSlotCenter = (workId: string, returningWorkIds: string[]) => {
+  const reelSlotCenter = (workId: string) => {
     const controlBounds = reelRef.current?.getBoundingClientRect();
-    const returning = new Set(returningWorkIds);
-    const worksAfterReturn = portfolioWorks.filter((work) =>
-      !placedRef.current.some((item) => item.workId === work.id) || returning.has(work.id),
-    );
-    const index = worksAfterReturn.findIndex((work) => work.id === workId);
-    if (!controlBounds || index < 0 || worksAfterReturn.length === 0) return null;
+    const index = portfolioWorks.findIndex((work) => work.id === workId);
+    if (!controlBounds || index < 0) return null;
     
-    // Calculates the return destination on the circular Ferris wheel path
-    const angle = ((index / worksAfterReturn.length) * 360 + rotationRef.current + 180) * Math.PI / 180;
-    const radius = 300;
+    // Exact mathematical match to the cascade curve in HorizontalRevolver
+    const itemSpacing = 200;
+    const trackHeight = Math.max(portfolioWorks.length * itemSpacing, 1000);
+    let offset = ((index * itemSpacing) + rotationRef.current) % trackHeight;
+    if (offset < -trackHeight / 2) offset += trackHeight;
+    if (offset > trackHeight / 2) offset -= trackHeight;
+
+    const distance = Math.abs(offset);
+    const xShift = Math.pow(distance / 200, 2) * 60;
+    const baseX = controlBounds.left + (controlBounds.width * 0.25);
 
     return {
-      x: controlBounds.left + (controlBounds.width / 2) + radius + (Math.cos(angle) * radius),
-      y: controlBounds.top + (controlBounds.height / 2) + (Math.sin(angle) * radius),
+      x: baseX + xShift,
+      y: controlBounds.top + (controlBounds.height / 2) + offset,
     };
   };
 
@@ -122,12 +126,11 @@ function App() {
     const collage = collageRef.current;
     const collageBounds = collage?.getBoundingClientRect();
     if (!collage || !collageBounds) return;
-    const returningWorkIds = items.map((item) => item.workId);
     const placedElements = Array.from(collage.querySelectorAll<HTMLElement>('[data-placed-id]'));
     const flights = items.flatMap((item, index) => {
       const element = placedElements.find((candidate) => candidate.dataset.placedId === item.id);
       const bounds = element?.getBoundingClientRect();
-      const target = reelSlotCenter(item.workId, returningWorkIds);
+      const target = reelSlotCenter(item.workId);
       if (!target) return [];
       const fromX = bounds ? bounds.left + bounds.width / 2 : collageBounds.left + (item.x / 100) * collageBounds.width;
       const fromY = bounds ? bounds.top + bounds.height / 2 : collageBounds.top + (item.y / 100) * collageBounds.height;
@@ -186,9 +189,18 @@ function App() {
     const move = (event: PointerEvent) => {
       const gesture = gestureRef.current;
       if (!gesture) return;
-      if (gesture.kind === 'reel') {
-        // Dragging the background UP/DOWN now smoothly rotates the wheel
-        setRotation(gesture.rotation - (event.clientY - gesture.y) * 0.5);
+
+      if (gesture.kind === 'pending-card') {
+        const dx = event.clientX - gesture.startX;
+        const dy = event.clientY - gesture.startY;
+        if (dx < -20) {
+          gestureRef.current = { kind: 'gallery-item', id: gesture.id, workId: gesture.workId, x: event.clientX, y: event.clientY };
+          setDragGhost({ workId: gesture.workId, x: event.clientX, y: event.clientY });
+        } else if (Math.abs(dy) > 10 || dx > 20) {
+          gestureRef.current = { kind: 'reel', x: gesture.startX, y: gesture.startY, rotation: gesture.rotation };
+        }
+      } else if (gesture.kind === 'reel') {
+        setRotation(gesture.rotation - (event.clientY - gesture.y) * 1.5);
       } else if (gesture.kind === 'gallery-item') {
         setDragGhost({ workId: gesture.workId, x: event.clientX, y: event.clientY });
       } else if (gesture.kind === 'canvas-item') {
@@ -241,14 +253,12 @@ function App() {
   }, [topLayer]);
 
   const beginReelDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    // Isolated background drag: ignores clicks if they are directly on a card
     if ((event.target as HTMLElement).closest('[data-work-card]')) return;
     gestureRef.current = { kind: 'reel', x: event.clientX, y: event.clientY, rotation };
   };
 
   const beginWorkDrag = (event: ReactPointerEvent<HTMLButtonElement>, work: PortfolioWork) => {
-    gestureRef.current = { kind: 'gallery-item', id: `${work.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, workId: work.id, x: event.clientX, y: event.clientY };
-    setDragGhost({ workId: work.id, x: event.clientX, y: event.clientY });
+    gestureRef.current = { kind: 'pending-card', id: `${work.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, workId: work.id, startX: event.clientX, startY: event.clientY, rotation };
   };
 
   const beginCanvasDrag = (event: ReactPointerEvent<HTMLButtonElement>, item: PlacedWork) => {

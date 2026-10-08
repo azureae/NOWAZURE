@@ -25,8 +25,8 @@ export function HorizontalRevolver({
   onBeginWorkDrag,
   onPlaceByKeyboard,
 }: HorizontalRevolverProps) {
-  // Comfortable vertical spacing so the overlapping cards have breathing room
-  const itemSpacing = 200; 
+  // Bigger spacing to match the larger 260px cards
+  const itemSpacing = 240; 
   const trackHeight = Math.max(allWorks.length * itemSpacing, 1000);
 
   useEffect(() => {
@@ -68,23 +68,15 @@ export function HorizontalRevolver({
         {availableWorks.map((work) => {
           const originalIndex = allWorks.findIndex((entry) => entry.id === work.id);
           
-          // Base continuous loop
           let offset = ((originalIndex * itemSpacing) + rotation) % trackHeight;
           if (offset < -trackHeight / 2) offset += trackHeight;
           if (offset > trackHeight / 2) offset -= trackHeight;
 
-          // Absolute distance from the center dictates the curve, scale, and z-index
+          // THE CASCADING MATH (Restored)
           const distance = Math.abs(offset);
-          
-          // Parabolic curve: Pushes the cards increasingly to the right as they move up/down
-          const xShift = Math.pow(distance / 200, 2) * 60;
-          
-          // Scales down the further they are from the center
-          const scale = Math.max(0.4, 1 - (distance * 0.0012));
-          
-          // Z-index ensures the center card is always overlapping the others beautifully
-          const zIndex = 1000 - Math.round(distance);
-          
+          const xShift = Math.pow(distance / 200, 2) * 60; // Sweeps to the right
+          const scale = Math.max(0.4, 1 - (distance * 0.0012)); // Scales down
+          const zIndex = 1000 - Math.round(distance); // Drops behind
           const opacity = Math.max(0, 1 - (distance / 700));
 
           return (
@@ -94,8 +86,8 @@ export function HorizontalRevolver({
               data-work-id={work.id}
               className="reel-card"
               style={{
-                // Anchor is 25% from the left to give the curve room to sweep right
-                left: `calc(25% + ${xShift}px)`,
+                // Anchored at 70% (pushed right per your mockup) + the sweeping curve
+                left: `calc(70% + ${xShift}px)`,
                 top: `calc(50% + ${offset}px)`,
                 transform: `translate(-50%, -50%) scale(${scale})`,
                 zIndex,

@@ -25,9 +25,9 @@ export function HorizontalRevolver({
   onBeginWorkDrag,
   onPlaceByKeyboard,
 }: HorizontalRevolverProps) {
-  // Increased spacing to accommodate the larger frame sizes
-  const itemSpacing = 260; 
-  const trackHeight = allWorks.length * itemSpacing;
+  // Bigger spacing to match the larger 260px cards
+  const itemSpacing = 240; 
+  const trackHeight = Math.max(allWorks.length * itemSpacing, 1000);
 
   useEffect(() => {
     const el = reelRef.current;
@@ -39,7 +39,7 @@ export function HorizontalRevolver({
 
   const rotateWithWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
     const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-    onRotate(rotation - delta * 0.8); 
+    onRotate(rotation - delta * 0.7); 
   };
 
   return (
@@ -63,17 +63,21 @@ export function HorizontalRevolver({
           maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
         }}
       >
-        <div
-          className="reel-axis"
-          style={{ transform: 'translate(-50%, -50%)', opacity: 0.05, height: '80%' }}
-          aria-hidden="true"
-        />
+        <div className="reel-axis" style={{ display: 'none' }} aria-hidden="true" />
+        
         {availableWorks.map((work) => {
           const originalIndex = allWorks.findIndex((entry) => entry.id === work.id);
           
           let offset = ((originalIndex * itemSpacing) + rotation) % trackHeight;
           if (offset < -trackHeight / 2) offset += trackHeight;
           if (offset > trackHeight / 2) offset -= trackHeight;
+
+          // THE CASCADING MATH (Restored)
+          const distance = Math.abs(offset);
+          const xShift = Math.pow(distance / 200, 2) * 60; // Sweeps to the right
+          const scale = Math.max(0.4, 1 - (distance * 0.0012)); // Scales down
+          const zIndex = 1000 - Math.round(distance); // Drops behind
+          const opacity = Math.max(0, 1 - (distance / 700));
 
           return (
             <button
@@ -82,11 +86,12 @@ export function HorizontalRevolver({
               data-work-id={work.id}
               className="reel-card"
               style={{
-                // Pushed significantly to the right to match your layout reference
-                left: '70%',
+                // Anchored at 70% (pushed right per your mockup) + the sweeping curve
+                left: `calc(70% + ${xShift}px)`,
                 top: `calc(50% + ${offset}px)`,
-                transform: `translate(-50%, -50%)`,
-                zIndex: 100,
+                transform: `translate(-50%, -50%) scale(${scale})`,
+                zIndex,
+                opacity,
               }}
               onPointerDown={(event) => onBeginWorkDrag(event, work)}
               onKeyDown={(event) => {

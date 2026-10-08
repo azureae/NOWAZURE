@@ -25,12 +25,10 @@ export function HorizontalRevolver({
   onBeginWorkDrag,
   onPlaceByKeyboard,
 }: HorizontalRevolverProps) {
-  // Compact radius so the movement area feels natural and close
-  const radius = 150; 
-  // Fixed degrees between each card so they stay tightly packed regardless of how many are left
-  const angleStep = 38; 
+  // Comfortable vertical spacing so the overlapping cards have breathing room
+  const itemSpacing = 200; 
+  const trackHeight = Math.max(allWorks.length * itemSpacing, 1000);
 
-  // Locks native window scrolling when hovering the revolver
   useEffect(() => {
     const el = reelRef.current;
     if (!el) return;
@@ -41,7 +39,7 @@ export function HorizontalRevolver({
 
   const rotateWithWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
     const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-    onRotate(rotation - delta * 0.2); 
+    onRotate(rotation - delta * 0.7); 
   };
 
   return (
@@ -61,25 +59,33 @@ export function HorizontalRevolver({
         role="group"
         style={{
           overflow: 'hidden',
-          // Your exact Paint.net top and bottom dropshadow gradient viewports
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)',
-          maskImage: 'linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
         }}
       >
         <div className="reel-axis" style={{ display: 'none' }} aria-hidden="true" />
         
-        {availableWorks.map((work, availableIndex) => {
+        {availableWorks.map((work) => {
           const originalIndex = allWorks.findIndex((entry) => entry.id === work.id);
           
-          // Tight, fixed spacing per card along the circular path
-          const angle = (availableIndex * angleStep) + rotation + 180;
-          const radians = (angle * Math.PI) / 180;
+          // Base continuous loop
+          let offset = ((originalIndex * itemSpacing) + rotation) % trackHeight;
+          if (offset < -trackHeight / 2) offset += trackHeight;
+          if (offset > trackHeight / 2) offset -= trackHeight;
+
+          // Absolute distance from the center dictates the curve, scale, and z-index
+          const distance = Math.abs(offset);
           
-          const x = Math.cos(radians) * radius;
-          const y = Math.sin(radians) * radius;
+          // Parabolic curve: Pushes the cards increasingly to the right as they move up/down
+          const xShift = Math.pow(distance / 200, 2) * 60;
           
-          // Smoothly hides cards as they curve around to the hidden right side
-          const isRightSide = Math.cos(radians) > 0.15;
+          // Scales down the further they are from the center
+          const scale = Math.max(0.4, 1 - (distance * 0.0012));
+          
+          // Z-index ensures the center card is always overlapping the others beautifully
+          const zIndex = 1000 - Math.round(distance);
+          
+          const opacity = Math.max(0, 1 - (distance / 700));
 
           return (
             <button
@@ -88,13 +94,12 @@ export function HorizontalRevolver({
               data-work-id={work.id}
               className="reel-card"
               style={{
-                // Anchor center shifted comfortably to the right
-                left: `calc(50% + ${radius}px + ${x}px)`,
-                top: `calc(50% + ${y}px)`,
-                transform: `translate(-50%, -50%)`,
-                zIndex: 100,
-                opacity: isRightSide ? 0 : 1,
-                pointerEvents: isRightSide ? 'none' : 'auto',
+                // Anchor is 25% from the left to give the curve room to sweep right
+                left: `calc(25% + ${xShift}px)`,
+                top: `calc(50% + ${offset}px)`,
+                transform: `translate(-50%, -50%) scale(${scale})`,
+                zIndex,
+                opacity,
               }}
               onPointerDown={(event) => onBeginWorkDrag(event, work)}
               onKeyDown={(event) => {
@@ -116,14 +121,13 @@ export function HorizontalRevolver({
             <span>Drag a placed frame back here or reset the canvas.</span>
           </div>
         )}
-        <div className="reel-reticle" aria-hidden="true"><span /><span /></div>
       </div>
       <div className="reel-controls">
-        <button className="rotate-button" type="button" onClick={() => onRotate(rotation + angleStep)}>
+        <button className="rotate-button" type="button" onClick={() => onRotate(rotation + itemSpacing)}>
           <ArrowDown size={15} />
         </button>
         <span className="mono">DRAG / SCROLL</span>
-        <button className="rotate-button" type="button" onClick={() => onRotate(rotation - angleStep)}>
+        <button className="rotate-button" type="button" onClick={() => onRotate(rotation - itemSpacing)}>
           <ArrowUp size={15} />
         </button>
       </div>

@@ -5,6 +5,19 @@ import { portfolioServices, portfolioWorks, type PortfolioWork } from './data/po
 import { homepageSlideshow } from './data/homepage-slideshow.config';
 import { HorizontalRevolver } from './components/HorizontalRevolver';
 
+// === COLLABORATIONS DATA ===
+// You can use direct paths like '/images/my-logo.png' if they are in the public/images folder
+const collaborationsData = [
+  { id: 'c1', name: 'Studio Alpha', image: null, fallback: 'SA', description: 'Description yap yap yap yap', link: '#' },
+  { id: 'c2', name: 'Beta Games', image: null, fallback: 'BG', description: 'Description yap yap yap yap', link: '#' },
+  { id: 'c3', name: 'Gamma Corp', image: null, fallback: 'GC', description: 'Description yap yap yap yap', link: '#' },
+  { id: 'c4', name: 'Delta Works', image: null, fallback: 'DW', description: 'Description yap yap yap yap', link: '#' },
+  { id: 'c5', name: 'Epsilon', image: null, fallback: 'EP', description: 'Description yap yap yap yap', link: '#' },
+  { id: 'c6', name: 'Zeta Interactive', image: null, fallback: 'ZI', description: 'Description yap yap yap yap', link: '#' },
+  { id: 'c7', name: 'Eta Designs', image: null, fallback: 'ED', description: 'Description yap yap yap yap', link: '#' },
+  { id: 'c8', name: 'Theta Visuals', image: null, fallback: 'TV', description: 'Description yap yap yap yap', link: '#' },
+];
+
 type PlacedWork = { id: string; workId: string; x: number; y: number; tilt: number; layer: number };
 type ReturnFlight = { id: string; workId: string; fromX: number; fromY: number; toX: number; toY: number; width: number; delay: number };
 type ActiveGesture =
@@ -31,6 +44,7 @@ function App() {
   const imagePanGestureRef = useRef<{ x: number; y: number; originX: number; originY: number } | null>(null);
   const rotationRef = useRef(0);
   const lastGalleryDragRef = useRef(0);
+  
   const [sceneIndex, setSceneIndex] = useState(0);
   const [wipe, setWipe] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -47,6 +61,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dragGhost, setDragGhost] = useState<{ workId: string; x: number; y: number } | null>(null);
   const [openService, setOpenService] = useState<string | null>(null);
+  const [openCollab, setOpenCollab] = useState<string | null>(null);
 
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const logoY = useTransform(scrollYProgress, [0, 0.8], [0, reducedMotion ? 0 : 370]);
@@ -62,16 +77,15 @@ function App() {
     const index = portfolioWorks.findIndex((work) => work.id === workId);
     if (!controlBounds || index < 0) return null;
     
-    // Exact mathematical match to the cascade curve in HorizontalRevolver
-    const itemSpacing = 200;
+    const itemSpacing = 240;
     const trackHeight = Math.max(portfolioWorks.length * itemSpacing, 1000);
     let offset = ((index * itemSpacing) + rotationRef.current) % trackHeight;
     if (offset < -trackHeight / 2) offset += trackHeight;
     if (offset > trackHeight / 2) offset -= trackHeight;
 
     const distance = Math.abs(offset);
-    const xShift = Math.pow(distance / 200, 2) * 60;
-    const baseX = controlBounds.left + (controlBounds.width * 0.25);
+    const xShift = Math.pow(distance / 200, 2) * 50;
+    const baseX = controlBounds.left + (controlBounds.width * 0.50); // Matches the new 50% center
 
     return {
       x: baseX + xShift,
@@ -294,7 +308,6 @@ function App() {
           {menuOpen ? 'CLOSE' : 'MENU'} <span>{menuOpen ? '−' : '+'}</span>
         </button>
       </header>
-
       <section id="home" className="hero" ref={heroRef} aria-label="Nowazure portfolio introduction">
         <div className="hero-backdrop" key={activeScene.id} style={{ backgroundImage: `url("${activeScene.image}")` }} />
         <div className="hero-vignette" />
@@ -342,6 +355,7 @@ function App() {
         </div>
         <div className="about-foot"><span className="mono">SCENE BUILDER / IMAGE MAKER</span><span className="mono">AVAILABLE FOR SELECT PROJECTS <b>●</b></span></div>
       </section>
+
 
       <section id="works" className="works-section">
         <div className="works-heading section-shell">
@@ -447,6 +461,43 @@ function App() {
               </div>;
             })}
           </div>
+        </div>
+      </section>
+
+      {/* === COLLABORATIONS SECTION === */}
+      <section id="collaborations" className="collab-section section-shell">
+        <div className="section-head">
+          <span className="section-label">PARTNERSHIPS</span>
+          <span className="mono section-count">03.5 / 04</span>
+        </div>
+        <div className="collab-header">
+          <h2 className="serif">Collaborations</h2>
+          <p>Welcome to the collaboration page. This is where I put all of the groups, companies, and projects I’ve collaborated with in terms of vignettes and commissions.</p>
+        </div>
+        <div className="collab-grid">
+          {collaborationsData.map((collab) => {
+            const isOpen = openCollab === collab.id;
+            return (
+              <div key={collab.id} className={`collab-card ${isOpen ? 'is-open' : ''}`}>
+                <button className="collab-trigger" onClick={() => setOpenCollab(isOpen ? null : collab.id)}>
+                  <div className="collab-logo">
+                    {collab.image ? (
+                      <img src={collab.image} alt={collab.name} draggable={false} />
+                    ) : (
+                      <span className="mono">{collab.fallback}</span>
+                    )}
+                  </div>
+                  <span className="collab-name serif">{collab.name}</span>
+                </button>
+                <div className="collab-details">
+                  <div className="collab-details-inner">
+                    <p>{collab.description}</p>
+                    <a href={collab.link} target="_blank" rel="noreferrer" className="mono">VISIT PROJECT <ArrowUpRight size={10} /></a>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 

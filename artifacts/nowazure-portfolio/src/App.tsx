@@ -8,14 +8,10 @@ import { HorizontalRevolver } from './components/HorizontalRevolver';
 // === COLLABORATIONS DATA ===
 // You can use direct paths like '/images/my-logo.png' if they are in the public/images folder
 const collaborationsData = [
-  { id: 'c1', name: 'Studio Alpha', image: null, fallback: 'SA', description: 'Description yap yap yap yap', link: '#' },
-  { id: 'c2', name: 'Beta Games', image: null, fallback: 'BG', description: 'Description yap yap yap yap', link: '#' },
-  { id: 'c3', name: 'Gamma Corp', image: null, fallback: 'GC', description: 'Description yap yap yap yap', link: '#' },
-  { id: 'c4', name: 'Delta Works', image: null, fallback: 'DW', description: 'Description yap yap yap yap', link: '#' },
-  { id: 'c5', name: 'Epsilon', image: null, fallback: 'EP', description: 'Description yap yap yap yap', link: '#' },
-  { id: 'c6', name: 'Zeta Interactive', image: null, fallback: 'ZI', description: 'Description yap yap yap yap', link: '#' },
-  { id: 'c7', name: 'Eta Designs', image: null, fallback: 'ED', description: 'Description yap yap yap yap', link: '#' },
-  { id: 'c8', name: 'Theta Visuals', image: null, fallback: 'TV', description: 'Description yap yap yap yap', link: '#' },
+  { id: 'c1', name: 'Λstray', image: '/images/astraylogo.png', fallback: 'AS', description: 'Description yap yap yap yap', link: 'https://www.roblox.com/communities/10792969/stray' },
+  { id: 'c2', name: 'Indonesia', image: '/images/ondonesialogo.png', fallback: 'IN', description: 'Description yap yap yap yap', link: 'https://www.roblox.com/communities/14319584/Indonesia' },
+  { id: 'c3', name: 'Miyake Clan', image: null, fallback: 'MC', description: 'Description yap yap yap yap', link: 'https://www.roblox.com/communities/718216474/Miyak-Clan' },
+  { id: 'c4', name: 'HINOWA', image: null, fallback: 'HN', description: 'Description yap yap yap yap', link: 'http://roblox.com/communities/14215769/Hinowa' },
 ];
 
 type PlacedWork = { id: string; workId: string; x: number; y: number; tilt: number; layer: number };

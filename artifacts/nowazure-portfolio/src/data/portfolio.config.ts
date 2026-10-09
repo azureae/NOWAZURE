@@ -78,7 +78,7 @@ export const portfolioWorks: PortfolioWork[] = [
     title: 'Under Pressure',
     category: 'Cinematic scene & World building',
     year: 'STUDY VIII',
-    image: '/images/under-pressure.png',
+    image: '/images/underpressure.png',
     description: "Don't look back. Made for Astray's main group backdrop banner. In collaboration with samip for his effects.",
     note: 'Depth-of-field · VFX · Environment',
   },

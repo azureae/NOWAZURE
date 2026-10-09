@@ -8,10 +8,10 @@ import { HorizontalRevolver } from './components/HorizontalRevolver';
 // === COLLABORATIONS DATA ===
 // You can use direct paths like '/images/my-logo.png' if they are in the public/images folder
 const collaborationsData = [
-  { id: 'c1', name: 'Λstray', image: '/images/astraylogo.png', fallback: 'AS', description: 'Description yap yap yap yap', link: 'https://www.roblox.com/communities/10792969/stray' },
-  { id: 'c2', name: 'Indonesia', image: '/images/ondonesialogo.png', fallback: 'IN', description: 'Description yap yap yap yap', link: 'https://www.roblox.com/communities/14319584/Indonesia' },
-  { id: 'c3', name: 'Miyake Clan', image: null, fallback: 'MC', description: 'Description yap yap yap yap', link: 'https://www.roblox.com/communities/718216474/Miyak-Clan' },
-  { id: 'c4', name: 'HINOWA', image: null, fallback: 'HN', description: 'Description yap yap yap yap', link: 'http://roblox.com/communities/14215769/Hinowa' },
+  { id: 'c1', name: 'Λstray', image: '/images/astraylogo.png', fallback: 'AS', description: 'Roblox UGC Community well-known for their high-quality yet affordable tactical gear. A lot of the products you see here have been made for them.', link: 'https://www.roblox.com/communities/10792969/stray' },
+  { id: 'c2', name: 'Indonesia', image: '/images/indonesialogo.png', fallback: 'IN', description: 'Indonesian Ro-Nation community built by @kohrenhund, a good friend of mine.', link: 'https://www.roblox.com/communities/14319584/Indonesia' },
+  { id: 'c3', name: 'Miyake Clan', image: '/images/saitologo.png', fallback: 'MC', description: 'Samurai clan based in the Sengoku Jidai community, currently defunct, but some of the products showcased here are made for them.', link: 'https://www.roblox.com/communities/718216474/Miyak-Clan' },
+  { id: 'c4', name: 'HINOWA', image: '/images/hinowalogo.png', fallback: 'HN', description: 'Roblox community branded as a family. This is where I hail from, but they help me make some quick cash sometimes.', link: 'http://roblox.com/communities/14215769/Hinowa' },
 ];
 
 type PlacedWork = { id: string; workId: string; x: number; y: number; tilt: number; layer: number };

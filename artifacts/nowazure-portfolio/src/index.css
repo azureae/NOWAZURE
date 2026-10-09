@@ -367,6 +367,67 @@ button:focus-visible, a:focus-visible { outline: 1px solid #d56a5d; outline-offs
   .image-viewer-hint { width: 100%; margin: 2px 0 0; text-align: center; }
 }
 
+/* === REVOLVER & CARDS === */
+.reel-panel { padding: 22px clamp(18px, 3vw, 43px) 23px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.reel-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.reel-heading .section-label { color: #e7ddd1; }
+.reel-count { font-size: 8px; color: #867c72; }
+.reel-instruction { font: italic 13px/1.6 var(--app-font-serif); color: #988c81; margin: 16px 0 0; }
+.reel-control { height: 355px; position: relative; margin: auto -10px; perspective: 800px; transform-style: preserve-3d; touch-action: none; cursor: grab; user-select: none; }
+.reel-control:active { cursor: grabbing; }
+.reel-axis { position: absolute; width: min(66%, 230px); height: auto; aspect-ratio: 1; left: 50%; top: 50%; border: 1px solid rgba(200,83,74,.5); border-radius: 50%; pointer-events: none; }
+
+/* The Cards themselves (Updated to be larger) */
+.reel-card { position: absolute; width: min(80%, 260px); aspect-ratio: 1.22; overflow: hidden; padding: 0; border: 1px solid rgba(239,229,215,.38); background: #242326; box-shadow: 0 14px 36px rgba(0,0,0,.45); cursor: grab; transition: border-color .2s, filter .2s; touch-action: none; }
+.reel-card:hover, .reel-card:focus-visible { border-color: #d46358; outline: none; }
+.reel-card img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; filter: saturate(.72); }
+.reel-card-no { position: absolute; bottom: 7px; left: 8px; font-size: 8px; color: white; text-shadow: 0 1px 6px black; }
+
+/* Empty states and controls */
+.reel-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 25px; color: #a99d91; text-align: center; pointer-events: none; }
+.reel-empty .serif { font-size: 19px; }
+.reel-empty > span:last-child { max-width: 220px; font: 8px/1.7 var(--app-font-mono); letter-spacing: .08em; color: #83796f; }
+.reel-reticle { position: absolute; width: 4px; height: 4px; border: 1px solid #c5554c; border-radius: 50%; left: 50%; top: 50%; pointer-events: none; opacity: .75; }
+.reel-reticle span:first-child { position: absolute; width: 18px; height: 1px; background: #c5554c; top: 1px; left: -8px; opacity: .5; }
+.reel-reticle span:last-child { position: absolute; width: 1px; height: 18px; background: #c5554c; left: 1px; top: -8px; opacity: .5; }
+.reel-controls { height: 35px; display: flex; align-items: center; justify-content: space-between; color: #9b9085; }
+.reel-controls > span { font-size: 8px; letter-spacing: .14em; }
+.rotate-button { width: 31px; height: 31px; display: grid; place-items: center; background: transparent; border: 1px solid rgba(239,229,215,.2); border-radius: 50%; cursor: pointer; transition: border-color .2s, color .2s; }
+.rotate-button:hover { border-color: #c64a43; color: #d96e62; }
+.reel-foot { margin-top: 17px; padding-top: 15px; border-top: 1px solid rgba(239,229,215,.14); display: flex; justify-content: space-between; color: #857b71; font-size: 7px; letter-spacing: .12em; }
+.reel-foot svg { color: #c14b43; }
+
+/* === COLLABORATIONS SECTION === */
+.collab-section { padding-top: 80px; padding-bottom: 90px; background: #151518; }
+.collab-header { padding: 40px 0 50px; max-width: 600px; }
+.collab-header h2 { font-size: clamp(40px, 6vw, 70px); font-weight: 500; margin: 0 0 15px; letter-spacing: -0.04em; }
+.collab-header p { color: #b6aba0; font-size: 13px; line-height: 1.8; margin: 0; }
+.collab-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+
+@media (max-width: 1024px) {
+  .collab-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 650px) {
+  .collab-grid { grid-template-columns: 1fr; }
+}
+
+.collab-card { border: 1px solid rgba(239,229,215,.16); background: #1b1a1b; display: flex; flex-direction: column; transition: background .2s; }
+.collab-card:hover { background: #201f21; }
+.collab-trigger { display: flex; align-items: center; gap: 15px; padding: 18px 15px; width: 100%; border: 0; background: transparent; cursor: pointer; text-align: left; transition: opacity .2s; }
+
+/* Logo Box & Image Scaling */
+.collab-logo { width: 42px; height: 42px; background: #2a292b; display: grid; place-items: center; color: #d16a5f; border-radius: 4px; font-size: 13px; flex: none; letter-spacing: 0.05em; overflow: hidden; }
+.collab-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.collab-name { font-size: 18px; color: #e9e1d7; }
+
+/* Smooth Accordion Expansion */
+.collab-details { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .35s cubic-bezier(.2,.7,.2,1); }
+.collab-card.is-open .collab-details { grid-template-rows: 1fr; }
+.collab-details-inner { min-height: 0; overflow: hidden; padding: 0 15px; }
+.collab-details-inner p { margin: 0 0 18px; font-size: 12px; color: #a59a8f; line-height: 1.7; }
+.collab-details-inner a { display: inline-flex; align-items: center; gap: 5px; color: #c56a5c; font-size: 9px; letter-spacing: .12em; padding-bottom: 22px; transition: color .2s; }
+.collab-details-inner a:hover { color: #e58277; }
+
 /* Contact details come from the published Nowazure portfolio profile. */
 .contact-socials { display: flex; gap: 22px; margin-top: 18px; }
 .contact-socials a { display: inline-flex; align-items: center; gap: 5px; color: #8f847a; font-size: 8px; letter-spacing: .12em; }

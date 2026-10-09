@@ -25,7 +25,6 @@ export function HorizontalRevolver({
   onBeginWorkDrag,
   onPlaceByKeyboard,
 }: HorizontalRevolverProps) {
-  // Bigger spacing to match the larger 260px cards
   const itemSpacing = 240; 
   const trackHeight = Math.max(allWorks.length * itemSpacing, 1000);
 
@@ -72,11 +71,10 @@ export function HorizontalRevolver({
           if (offset < -trackHeight / 2) offset += trackHeight;
           if (offset > trackHeight / 2) offset -= trackHeight;
 
-          // THE CASCADING MATH (Restored)
           const distance = Math.abs(offset);
-          const xShift = Math.pow(distance / 200, 2) * 60; // Sweeps to the right
-          const scale = Math.max(0.4, 1 - (distance * 0.0012)); // Scales down
-          const zIndex = 1000 - Math.round(distance); // Drops behind
+          const xShift = Math.pow(distance / 200, 2) * 50; // Gentle sweep to the right
+          const scale = Math.max(0.4, 1 - (distance * 0.0012));
+          const zIndex = 1000 - Math.round(distance);
           const opacity = Math.max(0, 1 - (distance / 700));
 
           return (
@@ -86,8 +84,8 @@ export function HorizontalRevolver({
               data-work-id={work.id}
               className="reel-card"
               style={{
-                // Anchored at 70% (pushed right per your mockup) + the sweeping curve
-                left: `calc(70% + ${xShift}px)`,
+                // Active frame is perfectly centered at 50%
+                left: `calc(50% + ${xShift}px)`,
                 top: `calc(50% + ${offset}px)`,
                 transform: `translate(-50%, -50%) scale(${scale})`,
                 zIndex,

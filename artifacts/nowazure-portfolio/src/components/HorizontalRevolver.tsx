@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent, type RefObject } from 'react';
+import { useEffect, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent, type RefObject } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import type { PortfolioWork } from '../data/portfolio.config';
 
@@ -28,28 +28,6 @@ export function HorizontalRevolver({
   const itemSpacing = 240; 
   const trackHeight = Math.max(allWorks.length * itemSpacing, 1000);
 
-  // Smooth momentum state tracking
-  const targetRotationRef = useRef(rotation);
-  const currentRotationRef = useRef(rotation);
-  targetRotationRef.current = rotation;
-
-  // Smooth animation loop (Lerp / Dampening)
-  useEffect(() => {
-    let animationFrameId: number;
-
-    const smoothScrollLoop = () => {
-      const diff = targetRotationRef.current - currentRotationRef.current;
-      if (Math.abs(diff) > 0.01) {
-        currentRotationRef.current += diff * 0.12; // 0.12 controls the glide speed/smoothness
-        onRotate(currentRotationRef.current);
-      }
-      animationFrameId = requestAnimationFrame(smoothScrollLoop);
-    };
-
-    animationFrameId = requestAnimationFrame(smoothScrollLoop);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [onRotate]);
-
   useEffect(() => {
     const el = reelRef.current;
     if (!el) return;
@@ -60,8 +38,7 @@ export function HorizontalRevolver({
 
   const rotateWithWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
     const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-    // Push into the target rotation ref instead of snapping instantly
-    targetRotationRef.current += delta * 0.7;
+    onRotate(rotation - delta * 0.7); 
   };
 
   return (
@@ -95,7 +72,7 @@ export function HorizontalRevolver({
           if (offset > trackHeight / 2) offset -= trackHeight;
 
           const distance = Math.abs(offset);
-          const xShift = Math.pow(distance / 200, 2) * 50;
+          const xShift = Math.pow(distance / 200, 2) * 50; // Gentle sweep to the right
           const scale = Math.max(0.4, 1 - (distance * 0.0012));
           const zIndex = 1000 - Math.round(distance);
           const opacity = Math.max(0, 1 - (distance / 700));
@@ -107,6 +84,7 @@ export function HorizontalRevolver({
               data-work-id={work.id}
               className="reel-card"
               style={{
+                // Active frame is perfectly centered at 50%
                 left: `calc(50% + ${xShift}px)`,
                 top: `calc(50% + ${offset}px)`,
                 transform: `translate(-50%, -50%) scale(${scale})`,
@@ -135,11 +113,11 @@ export function HorizontalRevolver({
         )}
       </div>
       <div className="reel-controls">
-        <button className="rotate-button" type="button" onClick={() => { targetRotationRef.current += itemSpacing; }}>
+        <button className="rotate-button" type="button" onClick={() => onRotate(rotation + itemSpacing)}>
           <ArrowDown size={15} />
         </button>
         <span className="mono">DRAG / SCROLL</span>
-        <button className="rotate-button" type="button" onClick={() => { targetRotationRef.current -= itemSpacing; }}>
+        <button className="rotate-button" type="button" onClick={() => onRotate(rotation - itemSpacing)}>
           <ArrowUp size={15} />
         </button>
       </div>

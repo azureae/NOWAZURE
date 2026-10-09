@@ -501,9 +501,9 @@ function App() {
         <div className="section-head"><span className="section-label">04 / MAKE SOMETHING</span><span className="mono section-count">COMMISSIONS OPEN <b>●</b></span></div>
         <div className="contact-main">
           <h2 className="serif">Have a world<br />in <em>mind?</em></h2>
-          <div className="contact-action"><p>Tell me what you’re building.<br />Let’s find its light.</p><a href="https://discord.com/users/433610512962420756" target="_blank" rel="noreferrer" className="contact-link">Message me on Discord <MoveUpRight size={16} /></a><div className="contact-socials mono"><a href="https://www.roblox.com/users/98237807/profile" target="_blank" rel="noreferrer">ROBLOX <ArrowUpRight size={11} /></a><a href="https://ko-fi.com/azureae" target="_blank" rel="noreferrer">KO-FI <ArrowUpRight size={11} /></a></div></div>
+          <div className="contact-action"><p>Tell me what you’re building.<br />Let’s find its light.</p><a href="https://discord.com/users/433610512962420756" target="_blank" rel="noreferrer" className="contact-link">Message me on Discord <MoveUpRight size={16} /></a><div className="contact-socials mono"><a href="https://www.roblox.com/users/98237807/profile" target="_blank" rel="noreferrer">ROBLOX PROFILE <ArrowUpRight size={11} /></a><a href="https://ko-fi.com/azureae" target="_blank" rel="noreferrer">BUY ME A KO-FI <ArrowUpRight size={11} /></a></div></div>
         </div>
-        <footer className="footer"><a className="footer-mark serif" href="#home">nowazure<span>.</span></a><span className="mono">ROBLOX STUDIO · BLENDER · PHOTOSHOP</span><a className="back-top mono" href="#home">BACK TO THE LIGHT ↑</a><span className="mono footer-year">© NOWAZURE</span></footer>
+        <footer className="footer"><a className="footer-mark serif" href="#home">nowazure<span>.</span></a><span className="mono">ROBLOX STUDIO · BLENDER · PAINT.NET</span><a className="back-top mono" href="#home">BACK TO THE LIGHT ↑</a><span className="mono footer-year">© NOWAZURE</span></footer>
       </section>
 
       {selected && (imageViewerOpen ? (
